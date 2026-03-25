@@ -131,7 +131,7 @@ function M.start(session, cmd, payload, handlers)
     return nil, write_err
   end
 
-  -- Flush stdin to ensure payload is sent immediately
+  -- Flush stdin to ensure payload is sent immediately to pi
   local stdin = process._state and process._state.stdin
   if stdin then
     pcall(function()
