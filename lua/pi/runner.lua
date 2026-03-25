@@ -131,6 +131,14 @@ function M.start(session, cmd, payload, handlers)
     return nil, write_err
   end
 
+  -- Flush stdin to ensure payload is sent immediately
+  local stdin = process._state and process._state.stdin
+  if stdin then
+    pcall(function()
+      stdin:flush()
+    end)
+  end
+
   return process
 end
 
@@ -142,6 +150,7 @@ function M.finish(session)
   local stdin = session.process._state and session.process._state.stdin
   if stdin then
     pcall(function()
+      stdin:flush()
       stdin:close()
     end)
   elseif not session.process:is_closing() then
