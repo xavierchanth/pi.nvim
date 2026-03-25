@@ -170,8 +170,8 @@ local function test_pi_ask_uses_vim_system_command()
   MiniTest.expect.equality(cmd[2], "--mode")
   MiniTest.expect.equality(cmd[3], "rpc")
   MiniTest.expect.equality(cmd[4], "--no-session")
-  MiniTest.expect.equality(cmd[5], "-ne")
-  MiniTest.expect.equality(cmd[6], "-ns")
+  MiniTest.expect.equality(cmd[5], "--no-extensions")
+  MiniTest.expect.equality(cmd[6], "--no-skills")
   MiniTest.expect.equality(stdin_mode, true)
 end
 
