@@ -275,6 +275,48 @@ local function test_clean_exit_without_agent_end_is_an_error()
   MiniTest.expect.equality(last_notification().msg:match("before completing request"), "before completing request")
 end
 
+local function test_turn_end_does_not_finish_session()
+  -- Regression: turn_end means one agent turn finished, not the whole run.
+  -- During multi-step tool workflows, the agent emits turn_end between turns
+  -- and only emits agent_end when the entire run is complete. See PR #4.
+  setup_test_env()
+  setup_buffer({ "code" }, "/test/file.lua")
+
+  local system = run_pi_ask("multi-turn")
+
+  -- Simulate: tool call -> turn_end with stopReason="toolUse" -> another turn
+  system.stdout('{"type":"tool_execution_start","toolName":"edit"}\n')
+  system.stdout('{"type":"tool_execution_end","toolName":"edit"}\n')
+  system.stdout('{"type":"turn_end","stopReason":"toolUse"}\n')
+
+  -- Session must still be running; stdin must not be closed.
+  MiniTest.expect.equality(child.lua_get([[require("pi").is_running()]]), true)
+  MiniTest.expect.equality(system.stdin_was_closed(), false)
+
+  -- Now the actual terminal event arrives.
+  system.stdout('{"type":"agent_end"}\n')
+  MiniTest.expect.equality(system.stdin_was_closed(), true)
+  system.exit(0, 0)
+
+  MiniTest.expect.equality(child.lua_get([[require("pi").is_running()]]), false)
+  MiniTest.expect.equality(child.lua_get([[require("pi")._get_last_session().status]]), "done")
+end
+
+local function test_turn_end_followed_by_agent_end_completes()
+  -- Single-turn runs emit turn_end immediately followed by agent_end.
+  -- Ensure that pattern still completes cleanly.
+  setup_test_env()
+  setup_buffer({ "code" }, "/test/file.lua")
+
+  local system = run_pi_ask("single turn")
+  system.stdout('{"type":"turn_end","stopReason":"endTurn"}\n{"type":"agent_end"}\n')
+  MiniTest.expect.equality(system.stdin_was_closed(), true)
+  system.exit(0, 0)
+
+  MiniTest.expect.equality(child.lua_get([[require("pi").is_running()]]), false)
+  MiniTest.expect.equality(child.lua_get([[require("pi")._get_last_session().status]]), "done")
+end
+
 local function test_cancel_kills_process_and_closes_immediately()
   setup_test_env()
   setup_buffer({ "code" }, "/test/file.lua")
@@ -412,6 +454,8 @@ T["Session"] = MiniTest.new_set()
 T["Session"]["handles chunked stdout and closes on success"] = test_chunked_stdout_updates_and_success_closes_float
 T["Session"]["keeps float open on error"] = test_error_keeps_float_open
 T["Session"]["clean exit without terminal event is an error"] = test_clean_exit_without_agent_end_is_an_error
+T["Session"]["turn_end does not finish session (multi-turn tool use)"] = test_turn_end_does_not_finish_session
+T["Session"]["turn_end followed by agent_end completes"] = test_turn_end_followed_by_agent_end_completes
 T["Session"]["cancel closes immediately"] = test_cancel_kills_process_and_closes_immediately
 
 return T
