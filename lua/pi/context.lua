@@ -86,6 +86,7 @@ function M.get_buffer_context(bufnr, config)
   local parts = {
     SYSTEM_PROMPT,
     string.format("File: %s", filename),
+    string.format("Cwd: %s", vim.fn.getcwd()),
     string.format("Filetype: %s", filetype_for(bufnr)),
     content_block("File content", content),
   }
@@ -120,6 +121,7 @@ function M.get_visual_context(bufnr, config)
   local parts = {
     SYSTEM_PROMPT,
     string.format("File: %s", filename),
+    string.format("Cwd: %s", vim.fn.getcwd()),
     string.format("Filetype: %s", filetype_for(bufnr)),
     string.format("Selected lines: %d-%d", selection_range.start, selection_range["end"]),
     content_block("Selected content", selected_text),
