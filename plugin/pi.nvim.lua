@@ -10,6 +10,14 @@ vim.g.loaded_pi_nvim = true
 
 -- Register user-facing commands exposed by the plugin.
 
+-- Support for nargs and ranges as optional parts of the command
+vim.api.nvim_create_user_command("Pi", function(...)
+  require("pi").auto_prompt(...)
+end, {
+  nargs="*",
+  range="%",
+})
+
 -- Open a prompt using the current buffer as additional context.
 vim.api.nvim_create_user_command("PiAsk", function()
   require("pi").prompt_with_buffer()

@@ -224,6 +224,30 @@ function M.setup(opts)
   config.setup(opts)
 end
 
+function M.auto_prompt(opts)
+  assert_supported_version()
+  local bufnr = ensure_file_backed_buffer("Pi")
+  if not bufnr then
+    return
+  end
+
+  if opts.args then
+    if opts.range > 0 then
+      return start_session(opts.args, function()
+        return context.get_visual_context(bufnr, config.get())
+      end)
+    end
+    return start_session(opts.args, function()
+      return context.get_buffer_context(bufnr, config.get())
+    end)
+  end
+
+  if opts.range > 0 then
+    return M.prompt_with_selection()
+  end
+  return M.prompt_with_buffer()
+end
+
 function M.prompt_with_buffer()
   assert_supported_version()
   local bufnr = ensure_file_backed_buffer("PiAsk")
